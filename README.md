@@ -13,17 +13,45 @@ feeds ──> normalize ──> dedupe(cross-run) ──> KEV enrich ──> spe
       ──> coordinator ──> alert-once lifecycle ──> SQLite ──> monitor console
 ```
 
-## Quickstart
+## Dashboard Preview
+
+The monitor is a local, keyboard-friendly console for live alert triage,
+watchlist review, source health, CISA KEV context, and recent run history.
+
+![NewsRoom monitor dashboard](assets/newsroom-dashboard.png)
+
+## Build, Test, And Run Locally
+
+Requirements: Python 3.11+.
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
+# Clone and enter the repo
+git clone https://github.com/v1ru6/newsroom.git
+cd newsroom
+
+# Create a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install the package and test dependencies
 pip install -e ".[dev]"
-pytest                                    # all tests, offline
 
-# The monitor: pipeline every 15 min + console, one process
-newsroom watch                            # http://127.0.0.1:8765
+# Run the offline test suite
+pytest
 
-# One-shot alternatives
+# Optional offline demo run using bundled fixtures
+newsroom run --fixture tests/fixtures/rss_sample.xml
+
+# Live monitor: pipeline every 15 min + console, one process
+newsroom watch
+```
+
+Open the dashboard at [http://127.0.0.1:8765](http://127.0.0.1:8765).
+Stop the monitor with `Ctrl-C`.
+
+Useful one-shot alternatives:
+
+```bash
 newsroom run --config config.yaml                     # single pipeline run
 newsroom run --fixture tests/fixtures/rss_sample.xml  # offline demo data
 newsroom serve                                        # console only, no scheduler
