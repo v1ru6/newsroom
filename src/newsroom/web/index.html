@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NewsRoom</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header id="topbar">
+  <div class="brand"><span class="brand-dot"></span><span class="brand-name">NEWSROOM</span></div>
+  <span class="tb-stat" id="status-run">last run -</span>
+  <span class="tb-stat" id="status-sources"><span class="dot ok"></span><span id="sources-live">- sources</span></span>
+  <div class="tb-spacer"></div>
+  <div class="searchbox"><span class="search-glyph">⌕</span>
+    <input id="search" type="search" placeholder="Filter alerts…" autocomplete="off"></div>
+  <div class="seg" id="chips">
+    <button class="seg-btn active" data-filter="all" type="button">All</button>
+    <button class="seg-btn" data-filter="critical" type="button">Critical</button>
+    <button class="seg-btn" data-filter="high" type="button">High</button>
+    <button class="seg-btn" data-filter="medium" type="button">Medium</button>
+  </div>
+  <button class="tb-btn" id="theme-btn" type="button">☀ Light</button>
+  <button class="tb-btn mono" id="refresh-btn" type="button">↻ refresh</button>
+</header>
+
+<section id="posture">
+  <div class="posture-left">
+    <span class="kicker">Threat posture - today</span>
+    <div class="posture-line">
+      <span id="posture-word">-</span>
+      <span id="posture-trend"></span>
+    </div>
+    <div class="meter" id="posture-meter">
+      <div></div><div></div><div></div><div></div><div></div>
+    </div>
+    <div class="meter-scale" id="posture-scale">
+      <span>LOW</span><span>GUARDED</span><span>ELEVATED</span><span>HIGH</span><span>SEVERE</span>
+    </div>
+  </div>
+  <div class="posture-right">
+    <div id="narrative">Waiting for first run…</div>
+    <div class="stat-row">
+      <div class="stat"><span class="stat-num red" id="stat-action">0</span><span class="stat-label">need action</span></div>
+      <div class="stat-sep"></div>
+      <div class="stat"><span class="stat-num blue" id="stat-watch">0</span><span class="stat-label">watching</span></div>
+      <div class="stat-sep"></div>
+      <div class="stat"><span class="stat-num faint" id="stat-filtered">0</span><span class="stat-label">auto-filtered</span></div>
+      <div class="tb-spacer"></div>
+      <div class="explainer">Priority = weighted expert average (0-100).<br>70+ critical · 60-69 high · 55+ alerts · 35-54 watch.</div>
+    </div>
+  </div>
+</section>
+
+<main id="grid">
+  <div id="col-main">
+    <section class="block">
+      <div class="block-head">
+        <span class="block-title">Active alerts</span>
+        <span class="pill red" id="review-pill" hidden></span>
+      </div>
+      <div id="alert-list"></div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <span class="block-title">On the watch</span>
+        <span class="block-hint">scored 35-54 · not yet alert-worthy</span>
+      </div>
+      <div class="table" id="watch-list"></div>
+    </section>
+  </div>
+
+  <aside id="rail">
+    <section class="rail-block">
+      <span class="block-title">CISA known exploited</span>
+      <span class="block-hint">federally mandated patch list · newest first</span>
+      <div class="rail-list" id="kev-list"></div>
+    </section>
+    <div class="rail-sep"></div>
+    <section class="rail-block">
+      <span class="block-title">Sources</span>
+      <div class="source-grid" id="source-list"></div>
+    </section>
+    <div class="rail-sep"></div>
+    <section class="rail-block">
+      <span class="block-title">Recent runs</span>
+      <div class="run-list" id="run-list"></div>
+    </section>
+  </aside>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

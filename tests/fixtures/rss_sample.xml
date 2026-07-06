@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Fixture Cyber Feed</title>
+    <link>https://example.com/feed</link>
+    <description>Deterministic sample articles for tests and demos</description>
+
+    <item>
+      <title>Critical zero-day CVE-2026-1234 in Fortinet FortiOS actively exploited, patch now</title>
+      <link>https://example.com/articles/fortios-zero-day</link>
+      <pubDate>Wed, 01 Jul 2026 08:00:00 GMT</pubDate>
+      <description>A critical remote code execution (RCE) vulnerability tracked as CVE-2026-1234 with a CVSS score of 9.8 is being actively exploited in the wild. Ransomware groups are targeting unpatched FortiOS devices. Vendors urge customers to apply the emergency patch immediately.</description>
+    </item>
+
+    <item>
+      <title>Healthcare giant confirms data breach exposing 4 million patient records</title>
+      <link>https://example.com/articles/healthcare-breach</link>
+      <pubDate>Wed, 01 Jul 2026 09:30:00 GMT</pubDate>
+      <description>Attackers stole customer data including names, social security numbers, and credentials. The leaked database was posted on a dark web forum. The breach is attributed to a known ransomware campaign.</description>
+    </item>
+
+    <item>
+      <title>APT group launches phishing campaign against European energy sector</title>
+      <link>https://example.com/articles/apt-energy-campaign</link>
+      <pubDate>Wed, 01 Jul 2026 10:15:00 GMT</pubDate>
+      <description>Researchers observed an ongoing campaign by a state-sponsored APT deploying custom malware via spear-phishing. The attack chain abuses a recently patched vulnerability, and some victims report active exploitation.</description>
+    </item>
+
+    <item>
+      <title>Vendor releases quarterly security newsletter roundup</title>
+      <link>https://example.com/articles/quarterly-newsletter</link>
+      <pubDate>Tue, 30 Jun 2026 12:00:00 GMT</pubDate>
+      <description>A roundup of industry events, webinars, and product announcements from the past quarter.</description>
+    </item>
+
+    <item>
+      <title>Critical zero-day CVE-2026-1234 in Fortinet FortiOS actively exploited, patch now</title>
+      <link>https://example.com/articles/fortios-zero-day-dupe</link>
+      <pubDate>Wed, 01 Jul 2026 08:05:00 GMT</pubDate>
+      <description>Duplicate syndicated copy of the FortiOS zero-day story.</description>
+    </item>
+
+    <item>
+      <title>Rumor: possible breach at unnamed company</title>
+      <link>https://example.com/articles/rumor</link>
+      <description>breach</description>
+    </item>
+  </channel>
+</rss>

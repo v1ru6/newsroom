@@ -1,0 +1,11 @@
+{
+  "title": "CISA KEV fixture",
+  "vulnerabilities": [
+    {"cveID": "CVE-2026-1234", "vendorProject": "Fortinet", "product": "FortiOS",
+     "vulnerabilityName": "FortiOS RCE", "dateAdded": "2026-07-01",
+     "dueDate": "2026-07-22", "knownRansomwareCampaignUse": "Known"},
+    {"cveID": "CVE-2026-0007", "vendorProject": "ExampleCorp", "product": "Widget",
+     "vulnerabilityName": "Widget auth bypass", "dateAdded": "2026-06-28",
+     "knownRansomwareCampaignUse": "Unknown"}
+  ]
+}

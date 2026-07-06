@@ -1,0 +1,73 @@
+# NewsRoom configuration.
+# Every value here can be overridden; thresholds also via CLI flags.
+#
+# Sources: 10 trusted feeds, verified live 2026-07-04. Dropped candidates and
+# why: Threatpost (defunct 2022), Daily Swig (discontinued 2023), FireEye
+# (brand retired), Verizon DBIR / SANS reading room / Red Canary report
+# (annual or paper collections, not feeds), IBM (no clean feed),
+# thisweekin4n6 (re-aggregates the others), Schneier + Didier Stevens
+# (trusted but essay/tooling content). Schneier is the documented swap
+# candidate for troyhunt.
+
+sources:
+  - {name: sans-isc, source_id: sans-isc, trust_level: high,
+     url: "https://isc.sans.edu/rssfeed_full.xml", focus_tags: [ops-diary]}
+  - {name: krebsonsecurity, source_id: krebsonsecurity, trust_level: high,
+     url: "https://krebsonsecurity.com/feed/", focus_tags: [cybercrime, breach]}
+  - {name: the-hacker-news, source_id: thehackernews, trust_level: medium,
+     url: "https://feeds.feedburner.com/TheHackersNews", focus_tags: [news]}
+  - {name: dark-reading, source_id: darkreading, trust_level: medium,
+     url: "https://www.darkreading.com/rss.xml", focus_tags: [news]}
+  - {name: cyberscoop, source_id: cyberscoop, trust_level: medium,
+     url: "https://www.cyberscoop.com/feed/", focus_tags: [news, policy]}
+  - {name: unit42, source_id: unit42, trust_level: high,
+     url: "https://unit42.paloaltonetworks.com/feed/", focus_tags: [research]}
+  - {name: the-dfir-report, source_id: thedfirreport, trust_level: high,
+     url: "https://thedfirreport.com/feed/", focus_tags: [dfir]}
+  - {name: project-zero, source_id: projectzero, trust_level: high,
+     url: "https://googleprojectzero.blogspot.com/feeds/posts/default",
+     focus_tags: [vuln-research]}
+  - {name: recorded-future, source_id: recordedfuture, trust_level: high,
+     url: "https://www.recordedfuture.com/feed", focus_tags: [threat-intel]}
+  - {name: troyhunt, source_id: troyhunt, trust_level: medium,
+     url: "https://www.troyhunt.com/rss/", focus_tags: [breach]}
+
+# CISA KEV: corroboration enrichment, never articles. Articles mentioning a
+# KEV-listed CVE get a flat +0.10 score boost (capped at 1.0).
+kev:
+  enabled: true
+  refresh_hours: 6
+
+# Weighted-average score >= alert_threshold  -> threat alert
+# watch_threshold <= score < alert_threshold -> watchlist
+# below watch_threshold, or confidence gate  -> suppressed
+#
+# Calibration: the average spans four orthogonal experts, so a story that
+# maxes out one domain (e.g. a critical zero-day) lands near 0.6, and only
+# multi-domain stories exceed 0.7. Tune per desired alert volume.
+alert_threshold: 0.55
+watch_threshold: 0.35
+
+# Articles whose confidence score is below this are suppressed even if their
+# keyword score is high (thin summaries, stale items, low-quality signals).
+min_confidence: 0.30
+
+classifier_weights:
+  vulnerability: 1.0
+  active_attack: 1.0
+  breach_impact: 1.0
+  confidence: 0.5
+
+max_items_per_source: 10
+source_timeout_seconds: 10
+output_dir: output
+db_path: output/newsroom.db
+
+llm:
+  enabled: false
+  provider:
+  model:
+  max_items: 5
+  timeout_seconds: 20
+  max_prompt_chars: 4000
+  max_retries: 0

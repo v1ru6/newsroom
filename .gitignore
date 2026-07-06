@@ -1,0 +1,69 @@
+# Python caches / build outputs
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+site/
+.pytest_cache/
+.cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.tox/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env/
+
+# Local runtime data and generated artifacts
+output/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.jsonl
+*.log
+*.tmp
+*.bak
+
+# Local secret/config files. Keep template env files publishable.
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*credentials*
+*secrets*
+*tokens*
+
+# OS/editor metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local agent/tooling state
+.claude/
+.codex/
+
+# Local design exports and non-source handoff files
+Newsroom layout/
+*layout*/
+docs/
+examples/
+NEWSROOM_PLAN.md
+*_PLAN.md
+*.pdf
