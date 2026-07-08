@@ -1,4 +1,9 @@
-"""Turn above-threshold decisions into client-facing threat alerts."""
+"""Turn coordinator decisions into redacted client-facing threat alerts.
+
+This module is intentionally small: scoring decides whether an alert exists;
+this layer shapes the alert payload, severity band, evidence, and recommended
+action that downstream delivery or the dashboard can consume.
+"""
 
 from __future__ import annotations
 
@@ -49,3 +54,7 @@ def build_alert(decision: ArticleDecision) -> ThreatAlert:
         gate_status=decision.gate_status,
         review_status="pending" if decision.review_required else "auto",
     )
+
+
+# Future improvement: Slack/webhook delivery should consume persisted
+# ThreatAlert records after review policy, not raw ArticleDecision objects.

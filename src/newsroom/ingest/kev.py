@@ -6,13 +6,10 @@ normalized text.
 """
 
 from __future__ import annotations
-
 import logging
 import re
 from datetime import datetime, timedelta, timezone
-
 import httpx
-
 from newsroom.config import Config
 from newsroom.safety import normalize_text
 from newsroom.store import Store
@@ -21,12 +18,10 @@ logger = logging.getLogger(__name__)
 
 CVE_RE = re.compile(r"CVE-\d{4}-\d{4,7}", re.IGNORECASE)
 
-
 def extract_cves(text: str) -> list[str]:
     return list(dict.fromkeys(
         m.group(0).upper() for m in CVE_RE.finditer(normalize_text(text))
     ))
-
 
 def parse_kev_payload(payload: dict) -> list[dict]:
     entries = []
@@ -43,7 +38,6 @@ def parse_kev_payload(payload: dict) -> list[dict]:
             "ransomware_use": str(record.get("knownRansomwareCampaignUse", "")),
         })
     return entries
-
 
 def refresh_kev(store: Store, config: Config) -> int:
     """Fetch the KEV catalog unless the cache is fresh. Fail-soft to cache."""
@@ -65,7 +59,6 @@ def refresh_kev(store: Store, config: Config) -> int:
     store.upsert_kev(entries)
     store.set_meta("kev_fetched_at", datetime.now(timezone.utc).isoformat())
     return len(entries)
-
 
 def record_mentions(store: Store, article_id: str, text: str) -> tuple[list[str], bool]:
     """Extract CVEs from text, persist mentions, report KEV corroboration."""

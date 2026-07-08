@@ -1,4 +1,10 @@
-"""Safety gates for untrusted news and optional LLM outputs."""
+"""OWASP-inspired gates for untrusted news and optional model output.
+
+The cheap regex gates are not the whole defense; they provide tripwires and
+telemetry. The stronger control is structural: raw content stays in the
+untrusted plane, claims must be grounded, and only reviewed ledger entries feed
+the trusted coordinator.
+"""
 
 from __future__ import annotations
 
@@ -66,6 +72,7 @@ def item_gate_decisions(item: NormalizedItem, *, llm_enabled: bool) -> list[Gate
     text = normalize_text(item.untrusted_text)
     decisions: list[GateDecision] = []
 
+    # Gate output is telemetry; containment comes from trusted-plane separation.
     if PROMPT_INJECTION_RE.search(text):
         decisions.append(
             GateDecision(
@@ -210,6 +217,7 @@ def review_findings(
             bool(finding.evidence)
             and all(normalize_text(ev) in item_text for ev in finding.evidence)
         )
+        # Do not promote claims that cannot be tied back to source evidence.
         if finding.source_refs and grounded:
             gates.append(
                 GateDecision(

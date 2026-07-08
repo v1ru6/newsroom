@@ -1,4 +1,8 @@
-"""Expert: data exposure and client-impacting breach stories."""
+"""Expert classifier for breach impact and exposed data.
+
+This score answers whether clients might care because records, credentials,
+PII, customer data, or large populations are affected.
+"""
 
 from newsroom.classifiers.base import KeywordClassifier, Signal
 

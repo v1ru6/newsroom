@@ -1,4 +1,8 @@
-"""Expert classifier registry. Add a classifier here to include it in runs."""
+"""Classifier convenience imports.
+
+Runtime registration lives in newsroom.agents.CLASSIFIER_AGENTS; this package
+keeps the built-in expert implementations discoverable for tests and imports.
+"""
 
 from newsroom.classifiers.active_attack import ActiveAttackClassifier
 from newsroom.classifiers.base import Classifier

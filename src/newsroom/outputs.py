@@ -1,7 +1,8 @@
-"""Artifact writers: JSONL exports, Markdown report, manifest, data.json.
+"""File artifact writers for offline review and static console fallback.
 
-The monitor UI lives in real static files (web/); this module only exports
-data. No HTML is generated in Python.
+The monitor UI lives in real static files (web/). This module exports JSONL,
+Markdown, manifest, safety report, and data.json artifacts so a run remains
+auditable even without the SQLite API server.
 """
 
 from __future__ import annotations

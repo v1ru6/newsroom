@@ -6,7 +6,8 @@ fetch_sources -> normalize_untrusted_items -> dedupe_items ->
   write_outputs
 
 Each node is a plain function over a shared typed state, so every stage can be
-unit-tested without the graph and swapped independently.
+unit-tested without the graph and swapped independently. The coordinator reads
+ledger entries only; raw feed content stays in earlier untrusted nodes.
 """
 
 from __future__ import annotations
@@ -216,6 +217,7 @@ def write_evidence_ledger(state: WorkflowState) -> WorkflowState:
         non_pass = [gate for gate in item_gates if gate.status != "pass"]
         if any(gate.status == "drop" and gate.finding_id == finding.finding_id for gate in item_gates):
             continue
+        # Only reviewed, redacted, provenance-tagged claims cross into the ledger.
         gate_status = "pass"
         if any(gate.status == "warn" for gate in non_pass):
             gate_status = "warn"
@@ -264,6 +266,7 @@ def coordinator_decisions(state: WorkflowState) -> WorkflowState:
     decisions: list[ArticleDecision] = []
     for item in state["items"]:
         entries = ledger_by_item.get(item.id, [])
+        # Rehydrate classifier results from ledger rows; raw article text stays out.
         results = [
             ClassifierResult(
                 classifier=AGENT_TO_CLASSIFIER[entry.agent_id],
@@ -376,6 +379,7 @@ def write_outputs_node(state: WorkflowState) -> WorkflowState:
 
 
 def build_graph():
+    # Keep graph nodes as plain functions so orchestration remains testable.
     graph = StateGraph(WorkflowState)
     graph.add_node("fetch_sources", fetch_sources)
     graph.add_node("normalize_untrusted_items", normalize_untrusted_items)

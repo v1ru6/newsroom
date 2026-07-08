@@ -51,6 +51,7 @@ class ApiHandler(BaseHTTPRequestHandler):
 
     def _json(self, payload, status: int = 200) -> None:
         self._headers(status, "application/json")
+        # Treat API responses as an output boundary and redact before serialization.
         self.wfile.write(json.dumps(_redact(payload), default=str).encode())
 
     def do_GET(self):  # noqa: N802 (stdlib naming)
@@ -89,6 +90,8 @@ class ApiHandler(BaseHTTPRequestHandler):
 
     def _api(self, route: str, q: dict) -> None:
         limit = min(int(q.get("limit", 100)), 500)
+        # Future improvement: add a new dashboard panel by adding one Store
+        # query here and rendering it in web/app.js through this redacted API.
         if route == "/api/summary":
             return self._json(self.store.summary(include_fixture=False))
         if route == "/api/alerts":
@@ -112,6 +115,7 @@ class ApiHandler(BaseHTTPRequestHandler):
     def _static(self, route: str) -> None:
         name = "index.html" if route == "/" else route.lstrip("/")
         target = (self.web_dir / name).resolve()
+        # Keep static serving local, with traversal blocked and content types fixed.
         if (self.web_dir.resolve() not in target.parents
                 or target.suffix not in _CONTENT_TYPES or not target.is_file()):
             return self._json({"error": "not found"}, status=404)

@@ -1,12 +1,14 @@
-"""Configuration loading and validation."""
+"""Operator policy: sources, thresholds, weights, persistence, KEV, and LLM.
 
+Pipeline code asks this module what policy to apply instead of hard-coding
+alert thresholds, source limits, classifier weights, DB paths, or optional
+enrichment/model settings. CLI overrides are validated through the same model.
+"""
 from __future__ import annotations
-
 from pathlib import Path
 
 import yaml
 from pydantic import BaseModel, Field, model_validator
-
 
 class SourceConfig(BaseModel):
     name: str
@@ -23,7 +25,6 @@ class SourceConfig(BaseModel):
         if self.source_id is None:
             self.source_id = self.name.lower().replace(" ", "-")
         return self
-
 
 class LLMConfig(BaseModel):
     enabled: bool = False

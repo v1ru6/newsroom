@@ -1,4 +1,9 @@
-"""Command-line interface: `newsroom run`, `newsroom serve`, `newsroom watch`."""
+"""Local operator entrypoints: `newsroom run`, `newsroom serve`, `newsroom watch`.
+
+`run` executes one workflow, `serve` exposes the existing SQLite-backed console,
+and `watch` keeps refreshing data on an interval while serving the dashboard in
+one process. The CLI keeps the take-home runnable without external services.
+"""
 
 from __future__ import annotations
 

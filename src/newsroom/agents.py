@@ -1,7 +1,11 @@
-"""Deterministic specialist agents for the untrusted analysis plane."""
+"""Run the deterministic expert panel over normalized untrusted items.
+
+Each agent wraps one classifier and emits an AgentFinding plus trace metadata.
+This is the "expert-style classifier" layer from the task, but it deliberately
+stays deterministic so article text cannot become instructions.
+"""
 
 from __future__ import annotations
-
 from newsroom.classifiers.active_attack import ActiveAttackClassifier
 from newsroom.classifiers.breach_impact import BreachImpactClassifier
 from newsroom.classifiers.confidence import ConfidenceClassifier
@@ -14,7 +18,8 @@ CLASSIFIER_AGENTS = (
     ("breach_agent", BreachImpactClassifier()),
     ("confidence_agent", ConfidenceClassifier()),
 )
-
+# Future improvement: a new expert registers here, then gets an optional weight
+# in config.yaml so scoring changes stay explicit.
 
 def run_specialist_agents(
     items: list[NormalizedItem], articles_by_id: dict[str, NewsArticle]
@@ -24,6 +29,7 @@ def run_specialist_agents(
     for item in items:
         article = articles_by_id[item.article_id]
         for agent_id, classifier in CLASSIFIER_AGENTS:
+            # Rule-based experts keep this path deterministic and instruction-agnostic.
             result = classifier.classify(article)
             claim = "; ".join(result.reasons) if result.reasons else f"{result.label} signal"
             finding = AgentFinding(

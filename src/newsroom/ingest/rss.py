@@ -1,21 +1,22 @@
-"""Source ingestion: fetch, parse, normalize, dedupe."""
+"""RSS ingestion: fetch live feeds, parse entries, normalize, and dedupe.
+
+This is the first trust boundary. Articles are accepted as attacker-controlled
+content, tagged with provenance, and converted into stable normalized items
+before any agent or coordinator logic can use them.
+"""
 
 from __future__ import annotations
-
 import html
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from time import mktime
-
 import feedparser
 import httpx
-
 from newsroom.config import Config, SourceConfig
 from newsroom.models import NewsArticle, NormalizedItem, SourceHealth, normalize_title, stable_id
 
 logger = logging.getLogger(__name__)
-
 
 def _entry_datetime(entry) -> datetime | None:
     for attr in ("published_parsed", "updated_parsed"):
@@ -24,14 +25,11 @@ def _entry_datetime(entry) -> datetime | None:
             return datetime.fromtimestamp(mktime(parsed), tz=timezone.utc)
     return None
 
-
 def _source_id(source: SourceConfig | None, source_name: str) -> str:
     return (source.source_id if source and source.source_id else source_name).lower()
 
-
 def _clean(value: object) -> str:
     return html.unescape(str(value or "")).strip()
-
 
 def normalize_entries(
     parsed, source_name: str, limit: int, source: SourceConfig | None = None
@@ -60,9 +58,9 @@ def normalize_entries(
         )
     return articles
 
-
 def fetch_source(source: SourceConfig, config: Config) -> tuple[list[NewsArticle], SourceHealth]:
     """Fetch one live RSS source. Failures degrade to an empty list + error health."""
+    # Keep source failures isolated so one bad feed does not stall the run.
     try:
         response = httpx.get(
             source.url,
@@ -79,7 +77,6 @@ def fetch_source(source: SourceConfig, config: Config) -> tuple[list[NewsArticle
     articles = normalize_entries(parsed, source.name, config.max_items_per_source, source)
     status = "ok" if articles else "empty"
     return articles, build_source_health(source, status, items=len(articles), normalized=len(articles))
-
 
 def build_source_health(
     source: SourceConfig,
@@ -101,7 +98,6 @@ def build_source_health(
         error=error,
     )
 
-
 def load_fixture(path: Path, config: Config) -> tuple[list[NewsArticle], SourceHealth]:
     """Parse a local RSS file instead of the network (demo/test mode)."""
     parsed = feedparser.parse(path.read_bytes())
@@ -114,7 +110,6 @@ def load_fixture(path: Path, config: Config) -> tuple[list[NewsArticle], SourceH
         items_fetched=len(articles),
         items_normalized=len(articles),
     )
-
 
 def fetch_all(config: Config) -> tuple[list[NewsArticle], list[SourceHealth]]:
     """Fetch fixture if configured, otherwise all enabled live sources."""
@@ -133,7 +128,6 @@ def fetch_all(config: Config) -> tuple[list[NewsArticle], list[SourceHealth]]:
         health.append(source_health)
     return all_articles, health
 
-
 def dedupe(articles: list[NewsArticle]) -> tuple[list[NewsArticle], int]:
     """Drop exact URL duplicates and near-duplicate titles. Keeps first seen."""
     seen_urls: set[str] = set()
@@ -148,7 +142,6 @@ def dedupe(articles: list[NewsArticle]) -> tuple[list[NewsArticle], int]:
         unique.append(article)
     return unique, len(articles) - len(unique)
 
-
 def articles_to_normalized_items(articles: list[NewsArticle]) -> list[NormalizedItem]:
     items: list[NormalizedItem] = []
     for article in articles:
@@ -157,6 +150,7 @@ def articles_to_normalized_items(articles: list[NewsArticle]) -> list[Normalized
         normalized = normalize_title(article.title)
         untrusted_text = article.text
         text_hash = stable_id(normalized, untrusted_text)
+        # Preserve provenance and a stable hash before any scoring touches the item.
         items.append(
             NormalizedItem(
                 id=stable_id(canonical_url, text_hash),

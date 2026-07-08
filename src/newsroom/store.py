@@ -1,7 +1,8 @@
-"""SQLite persistence: run history, articles, decisions, alert lifecycle, KEV.
+"""SQLite persistence for the monitor's memory and dashboard API.
 
-One connection guarded by a lock so the watch scheduler thread and the
-threaded API server can share a Store safely.
+The store owns cross-run dedupe, source health, alert-once lifecycle, recent
+runs, review status, and KEV cache. One connection is guarded by a lock so the
+watch scheduler thread and threaded API server can share it safely.
 """
 
 from __future__ import annotations
@@ -224,6 +225,7 @@ class Store:
             row = self.conn.execute(
                 "SELECT * FROM alerts WHERE article_id=?", (article_id,)).fetchone()
             if row is None:
+                # First crossing creates the alert; repeats update history only.
                 self.conn.execute(
                     """INSERT INTO alerts(alert_id, article_id, severity,
                          first_alerted_at, last_seen_at, first_score, last_score,

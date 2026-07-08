@@ -1,7 +1,10 @@
-"""Expert: active exploitation and attack campaigns."""
+"""Expert classifier for active exploitation and campaign activity.
+
+This is the signal owner for attacks in progress: exploitation in the wild,
+APT/state-sponsored language, ransomware, malware, botnets, and phishing.
+"""
 
 from newsroom.classifiers.base import KeywordClassifier, Signal
-
 
 class ActiveAttackClassifier(KeywordClassifier):
     name = "active_attack"

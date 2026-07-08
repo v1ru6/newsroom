@@ -1,4 +1,9 @@
-"""Score aggregation and alert/watchlist/suppress routing."""
+"""Coordinator decision policy: average scores, promotions, and routing.
+
+This is where expert outputs become the task's required average score and final
+route: alert, watchlist, or suppressed. Promotions handle cyber-specific cases
+where a conservative weighted average would understate urgency.
+"""
 
 from __future__ import annotations
 
@@ -9,6 +14,7 @@ from newsroom.models import ArticleDecision, ClassifierResult, NewsArticle
 def weighted_average(results: list[ClassifierResult], weights: dict[str, float]) -> float:
     """Average of classifier scores, weighted per config. Unknown classifiers
     default to weight 1.0 so newly added experts count immediately."""
+    # Collapse the expert signals into the configured routing score.
     total = 0.0
     weight_sum = 0.0
     for result in results:
@@ -49,6 +55,9 @@ def promotion_reason(
     quiet. Promotions still require watch-level aggregate signal and a current,
     substantive item, so stale research posts do not page someone.
     """
+    # Promotion rules explain alerts that land below the numeric threshold.
+    # Future improvement: urgency rules such as "ransomware is always high"
+    # should be modeled here and covered by a focused scoring test.
     if average < config.watch_threshold:
         return None
     confidence = _result(results, "confidence")
@@ -84,6 +93,7 @@ def decide(article: NewsArticle, results: list[ClassifierResult], config: Config
     decision = "suppressed"
     suppression_reason: str | None = None
 
+    # Confidence gates keep keyword-heavy but weakly grounded items out.
     if confidence < config.min_confidence:
         suppression_reason = (
             f"confidence {confidence:.2f} below min_confidence {config.min_confidence:.2f}"

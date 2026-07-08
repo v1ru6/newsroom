@@ -1,7 +1,5 @@
 import threading
-
 from newsroom.cli import watch_loop
-
 
 def test_watch_loop_runs_and_survives_errors():
     calls = []

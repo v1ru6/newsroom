@@ -1,11 +1,8 @@
 import json
-
 import pytest
-
 from newsroom.config import Config, KEVConfig
 from newsroom.store import Store
 from newsroom.workflow import run_workflow
-
 
 def test_end_to_end_fixture_run(fixture_config):
     report = run_workflow(fixture_config)

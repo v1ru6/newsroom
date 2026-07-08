@@ -6,13 +6,10 @@ experts (including LLM-backed ones) only need to implement `classify`.
 """
 
 from __future__ import annotations
-
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-
 from newsroom.models import ClassifierResult, NewsArticle
-
 
 class Classifier(ABC):
     name: str
@@ -21,7 +18,6 @@ class Classifier(ABC):
     @abstractmethod
     def classify(self, article: NewsArticle) -> ClassifierResult:
         ...
-
 
 @dataclass(frozen=True)
 class Signal:
@@ -39,6 +35,8 @@ class KeywordClassifier(Classifier):
     """Deterministic expert scoring by weighted signal hits, capped at 1.0."""
 
     signals: list[Signal] = []
+    # Future improvement: most new experts can start by declaring Signal rows
+    # here in a subclass, then graduate to custom classify logic if needed.
 
     def classify(self, article: NewsArticle) -> ClassifierResult:
         score = 0.0
@@ -47,6 +45,7 @@ class KeywordClassifier(Classifier):
         for signal in self.signals:
             hits = signal.matches(article.text)
             if hits:
+                # Preserve the matched phrase so later stages can ground the score.
                 score += signal.weight
                 reasons.append(signal.reason)
                 evidence.extend(dict.fromkeys(hits[:3]))
