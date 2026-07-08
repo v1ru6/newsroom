@@ -1,3 +1,9 @@
+"""Watch-loop scheduler test.
+
+This calls the scheduler loop directly with a tiny interval and a controlled
+failure to prove one bad run is reported without stopping future runs.
+"""
+
 import threading
 from newsroom.cli import watch_loop
 

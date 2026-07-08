@@ -1,3 +1,10 @@
+"""SQLite store tests.
+
+These use a fresh temp database per test to verify run metadata, article hash
+tracking, decision/source-health persistence, metadata, and alert-once
+lifecycle events.
+"""
+
 import json
 from datetime import datetime, timezone
 import pytest

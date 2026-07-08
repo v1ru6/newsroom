@@ -1,3 +1,10 @@
+"""End-to-end workflow tests.
+
+These run the LangGraph pipeline against fixture feeds and temp databases to
+verify alert/watch/suppress routing, artifact exports, stable IDs, cross-run
+dedupe, alert-once behavior, and KEV score boosting.
+"""
+
 import json
 import pytest
 from newsroom.config import Config, KEVConfig

@@ -1,3 +1,9 @@
+"""CLI entrypoint tests.
+
+These call `newsroom.cli.main` directly with fixture feeds and temp output/DB
+paths, so they verify command behavior without live network access.
+"""
+
 from newsroom.cli import main
 
 

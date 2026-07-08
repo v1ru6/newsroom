@@ -1,4 +1,8 @@
-"""Adversarial coverage: detection evasion, evidence grounding, inert rendering."""
+"""Adversarial safety tests.
+
+These focus on prompt-injection evasion, spotlighting modes, source-evidence
+grounding, inert artifact rendering, and HITL review for tripwired alerts.
+"""
 
 from newsroom.safety import PROMPT_INJECTION_RE, normalize_text
 

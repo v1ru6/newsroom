@@ -1,3 +1,9 @@
+"""RSS ingestion tests.
+
+These use local fixture feeds to verify parsing, fixture-mode routing, duplicate
+removal, and max-items-per-source limits without touching live feeds.
+"""
+
 from newsroom.config import Config
 from newsroom.ingest.rss import dedupe, fetch_all, load_fixture
 

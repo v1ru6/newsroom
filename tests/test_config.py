@@ -1,3 +1,9 @@
+"""Configuration validation tests.
+
+These cover defaults, YAML loading, CLI-style overrides, invalid thresholds,
+source defaults, and the provider/model requirement for opt-in LLM mode.
+"""
+
 import pytest
 from pydantic import ValidationError
 

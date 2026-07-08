@@ -1,3 +1,10 @@
+"""Loopback API and static-server tests.
+
+Each test seeds a temporary SQLite store, starts the local HTTP server on a
+random port, then checks redaction, security headers, review writes, traversal
+blocking, and live-vs-fixture filtering.
+"""
+
 import json
 import threading
 import urllib.error

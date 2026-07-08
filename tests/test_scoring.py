@@ -1,3 +1,10 @@
+"""Classifier and coordinator-scoring tests.
+
+These build in-memory NewsArticle and ClassifierResult objects to check expert
+scores, weighted averages, thresholds, confidence gates, KEV boosts, and
+promotion rules without needing RSS or SQLite.
+"""
+
 from datetime import datetime, timezone
 from newsroom.classifiers import default_classifiers
 from newsroom.classifiers.active_attack import ActiveAttackClassifier

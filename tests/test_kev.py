@@ -1,3 +1,9 @@
+"""CISA KEV enrichment tests.
+
+These use a local KEV JSON fixture and temp SQLite stores to verify CVE
+extraction, KEV parsing/cache persistence, and article-to-KEV mention matching.
+"""
+
 import json
 from pathlib import Path
 

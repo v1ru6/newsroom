@@ -1,3 +1,10 @@
+"""Agent-safety tests for the untrusted pipeline.
+
+These use prompt-injection fixtures, direct model-output objects, and temp
+SQLite/output paths to prove LLM blocking, redaction, reviewer drops, and
+ledger-only coordinator behavior.
+"""
+
 import json
 from datetime import datetime, timezone
 
