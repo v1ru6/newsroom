@@ -27,5 +27,13 @@ def test_cli_prompt_injection_fixture_run(prompt_injection_feed, tmp_path):
 
 
 def test_cli_llm_requires_provider_and_model(tmp_path):
-    assert main(["run", "--config", "config.yaml", "--llm",
+    bad_config = tmp_path / "bad-llm.yaml"
+    bad_config.write_text(
+        "sources: []\n"
+        "llm:\n"
+        "  enabled: false\n"
+        "  provider:\n"
+        "  model:\n"
+    )
+    assert main(["run", "--config", str(bad_config), "--llm",
                  "--db-path", str(tmp_path / "n.db"), "--no-kev"]) == 2

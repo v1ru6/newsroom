@@ -66,33 +66,29 @@ source_timeout_seconds: 10
 output_dir: output
 db_path: output/newsroom.db
 
-# Optional LLM stage. When enabled, two things happen:
-#   1. The active_attack expert becomes an LLM specialist: the regex signals
-#      feed the model as trusted context, and the regex result is the fallback
-#      whenever the call fails, output is ungrounded, the item is injection-
-#      blocked, or the max_items spend cap is hit. Scores never silently
-#      disappear - worst case is the deterministic baseline.
-#   2. A generic fifth-expert triage pass (llm_triage) reviews items; disable
-#      via triage_enabled to run only the specialist (halves API calls).
-# provider and model are deliberately blank so enabling the LLM is an explicit
-# operator choice. Authenticate with `newsroom auth login <provider>` and
-# verify with `newsroom auth status`; NewsRoom never stores credentials -
-# each vendor SDK resolves its own (Anthropic: browser link sign-in via
-# `ant auth login` or ANTHROPIC_API_KEY; OpenAI: OPENAI_API_KEY).
-#   provider: anthropic  model: claude-opus-4-8 -> live Claude API call with
-#     structured outputs. max_items is the per-run spend cap per LLM surface.
-#   provider: openai     model: gpt-5.1 -> live OpenAI call in JSON mode; the
-#     same strict validation gates apply downstream.
-#   provider: fake  model: fixture -> replays a JSON fixture (fixture_path)
-#     offline: {"<item_id>": {"findings": [...]}, "_default": {"findings": []}}
+# Optional LLM stage. Keep enabled=false for deterministic offline operation.
+# Flip enabled to true, or pass --llm, after authenticating the selected
+# provider. Provider/model values are not secrets; credentials come from the
+# vendor SDK/environment and are never stored by NewsRoom.
+#
+# When enabled, active_attack becomes an LLM specialist. Regex signals are sent
+# as trusted context, and the regex result remains the fallback whenever the
+# call fails, output is ungrounded, the item is injection-blocked, or max_items
+# is reached. triage_enabled=false runs only that specialist; set it true to add
+# the generic llm_triage fifth expert as well.
+#
+# Anthropic auth: `newsroom auth login anthropic` or ANTHROPIC_API_KEY.
+# OpenAI auth: export OPENAI_API_KEY, then set provider/model below.
+# Fake provider: set provider=fake, model=fixture, and fixture_path to a JSON
+# response replay file shaped like {"<item_id>": {"findings": [...]}}.
 llm:
   enabled: false
-  provider:
-  model:
-  triage_enabled: true
-  max_items: 5
+  provider: anthropic
+  model: claude-opus-4-8
+  triage_enabled: false
+  max_items: 100
   max_tokens: 1024
-  timeout_seconds: 20
+  timeout_seconds: 30
   max_prompt_chars: 4000
   max_retries: 0
   # fixture_path: output/llm_responses.json  # provider: fake only

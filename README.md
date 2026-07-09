@@ -106,8 +106,10 @@ Key guardrails:
 
 ## Wire An LLM Locally
 
-Keep live provider settings in an ignored `config.local` file instead of
-committing credentials, spend caps, or local output paths to `config.yaml`.
+The committed [config.yaml](config.yaml) already contains a ready-but-disabled
+LLM configuration. Provider and model names are not secrets; credentials stay
+outside the repo and are resolved by the provider SDK or environment.
+
 NewsRoom currently supports `anthropic`, `openai`, and `fake` providers.
 
 Authenticate a provider:
@@ -123,44 +125,31 @@ export OPENAI_API_KEY="sk-..."
 newsroom auth status openai
 ```
 
-Create a local live-LLM config:
-
-```bash
-python - <<'PY'
-from pathlib import Path
-import yaml
-
-cfg = yaml.safe_load(Path("config.yaml").read_text())
-cfg["max_items_per_source"] = 10
-cfg["output_dir"] = "output/live-llm"
-cfg["db_path"] = "output/live-llm/newsroom.db"
-cfg["llm"].update({
-    "enabled": True,
-    "provider": "anthropic",
-    "model": "claude-opus-4-8",
-    "triage_enabled": False,
-    "max_items": 100,
-    "max_tokens": 1024,
-    "timeout_seconds": 30,
-    "max_retries": 0,
-})
-
-Path("config.local").write_text(yaml.safe_dump(cfg, sort_keys=False))
-PY
-```
-
-For OpenAI, change the local config values to:
+Use the default Anthropic settings in `config.yaml`, or switch provider/model
+there:
 
 ```yaml
-provider: openai
-model: gpt-5.1
+llm:
+  enabled: false
+  provider: anthropic
+  model: claude-opus-4-8
+  triage_enabled: false
+  max_items: 100
 ```
 
-Run one live pull:
+For OpenAI, change `provider` to `openai` and `model` to `gpt-5.1`.
+
+Run one live pull with the LLM enabled for that command:
 
 ```bash
-rm -rf output/live-llm
-newsroom run --config config.local --llm
+rm -rf output
+newsroom run --config config.yaml --llm
+```
+
+Alternatively, set `llm.enabled: true` in `config.yaml` and omit `--llm`:
+
+```bash
+newsroom run --config config.yaml
 ```
 
 Check whether the active-attack specialist used the model:
@@ -171,7 +160,7 @@ import json
 from collections import Counter
 
 modes = Counter()
-for line in open("output/live-llm/agent_trace.jsonl"):
+for line in open("output/agent_trace.jsonl"):
     row = json.loads(line)
     if row.get("agent_id") == "campaign_agent" and row.get("action") == "llm_classify":
         modes[row.get("details", {}).get("mode", "unknown")] += 1
@@ -191,14 +180,14 @@ Expected modes:
 Start the dashboard from the live database:
 
 ```bash
-newsroom serve --db-path output/live-llm/newsroom.db --port 8765
+newsroom serve --db-path output/newsroom.db --port 8765
 ```
 
 Open [http://127.0.0.1:8765](http://127.0.0.1:8765). For continuous live
 collection and dashboard serving in one process:
 
 ```bash
-newsroom watch --config config.local --llm --interval 900 --port 8765
+newsroom watch --config config.yaml --llm --interval 900 --port 8765
 ```
 
 Rows marked `LLM EXPERT` were accepted from the live LLM active-attack path.
