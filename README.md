@@ -104,6 +104,107 @@ Key guardrails:
 - `max_items`, token limits, provider timeouts, and retry caps bound cost and
   resource use.
 
+## Wire An LLM Locally
+
+Keep live provider settings in an ignored `config.local` file instead of
+committing credentials, spend caps, or local output paths to `config.yaml`.
+NewsRoom currently supports `anthropic`, `openai`, and `fake` providers.
+
+Authenticate a provider:
+
+```bash
+# Anthropic: browser link flow when the ant CLI is installed, or use
+# ANTHROPIC_API_KEY from the environment.
+newsroom auth login anthropic
+newsroom auth status anthropic
+
+# OpenAI: use OPENAI_API_KEY from the environment.
+export OPENAI_API_KEY="sk-..."
+newsroom auth status openai
+```
+
+Create a local live-LLM config:
+
+```bash
+python - <<'PY'
+from pathlib import Path
+import yaml
+
+cfg = yaml.safe_load(Path("config.yaml").read_text())
+cfg["max_items_per_source"] = 10
+cfg["output_dir"] = "output/live-llm"
+cfg["db_path"] = "output/live-llm/newsroom.db"
+cfg["llm"].update({
+    "enabled": True,
+    "provider": "anthropic",
+    "model": "claude-opus-4-8",
+    "triage_enabled": False,
+    "max_items": 100,
+    "max_tokens": 1024,
+    "timeout_seconds": 30,
+    "max_retries": 0,
+})
+
+Path("config.local").write_text(yaml.safe_dump(cfg, sort_keys=False))
+PY
+```
+
+For OpenAI, change the local config values to:
+
+```yaml
+provider: openai
+model: gpt-5.1
+```
+
+Run one live pull:
+
+```bash
+rm -rf output/live-llm
+newsroom run --config config.local --llm
+```
+
+Check whether the active-attack specialist used the model:
+
+```bash
+python - <<'PY'
+import json
+from collections import Counter
+
+modes = Counter()
+for line in open("output/live-llm/agent_trace.jsonl"):
+    row = json.loads(line)
+    if row.get("agent_id") == "campaign_agent" and row.get("action") == "llm_classify":
+        modes[row.get("details", {}).get("mode", "unknown")] += 1
+
+print(dict(modes))
+PY
+```
+
+Expected modes:
+
+- `llm`: the live model result was accepted.
+- `regex_fallback`: the model was attempted, but guardrails rejected the result
+  or the provider failed, so the deterministic classifier was used.
+- `regex_capped`: `llm.max_items` was reached before all parsed articles were
+  reviewed by the model.
+
+Start the dashboard from the live database:
+
+```bash
+newsroom serve --db-path output/live-llm/newsroom.db --port 8765
+```
+
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765). For continuous live
+collection and dashboard serving in one process:
+
+```bash
+newsroom watch --config config.local --llm --interval 900 --port 8765
+```
+
+Rows marked `LLM EXPERT` were accepted from the live LLM active-attack path.
+A true on-device/local-model provider is not implemented yet; add that behind
+the `LLMProvider` interface in `src/newsroom/llm_wire.py`.
+
 ## Configuration
 
 [config.yaml](config.yaml) controls feed sources, trust levels, KEV refresh,
