@@ -278,7 +278,17 @@ class Store:
                    FROM alerts al JOIN articles a ON a.article_id = al.article_id
                    """
                 + where
-                + " ORDER BY al.last_seen_at DESC LIMIT ?",
+                + """ ORDER BY
+                      CASE al.severity
+                        WHEN 'critical' THEN 3
+                        WHEN 'high' THEN 2
+                        WHEN 'medium' THEN 1
+                        ELSE 0
+                      END DESC,
+                      al.last_score DESC,
+                      al.max_score DESC,
+                      al.last_seen_at DESC
+                    LIMIT ?""",
                 tuple(params),
             ).fetchall()
         return [dict(row) for row in rows]

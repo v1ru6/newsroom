@@ -6,7 +6,7 @@ lifecycle events.
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import pytest
 from newsroom.models import ArticleDecision, ClassifierResult, NewsArticle, SourceHealth, ThreatAlert, stable_id
 from newsroom.store import Store
@@ -107,3 +107,22 @@ def test_alert_lifecycle(store):
     assert json.loads(row["safety_notes_json"]) == ["promoted: test signal"]
     events = store.alert_events(row["alert_id"])
     assert [e["event_type"] for e in events] == ["created", "re_crossed", "severity_changed"]
+
+
+def test_recent_alerts_orders_by_current_severity_before_recency(store):
+    run_id = store.begin_run(NOW)
+    stronger = article("https://example.com/stronger")
+    weaker = article("https://example.com/weaker")
+    store.upsert_article(stronger, run_id, text_hash="stronger")
+    store.upsert_article(weaker, run_id, text_hash="weaker")
+
+    store.record_alert(alert_for(stronger, 0.69, "high"), at=NOW)
+    store.record_alert(alert_for(weaker, 0.56, "medium"), at=NOW + timedelta(minutes=5))
+
+    rows = store.recent_alerts()
+
+    assert [row["alert_id"] for row in rows] == [
+        f"al-{stronger.id}",
+        f"al-{weaker.id}",
+    ]
+    assert [row["last_score"] for row in rows] == [0.69, 0.56]
