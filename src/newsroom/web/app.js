@@ -342,7 +342,9 @@ function restyleSelection() {
 function renderWatch() {
   const table = $("#watch-list");
   table.replaceChildren();
-  const rows = state.data.watchlist || [];
+  const rows = [...(state.data.watchlist || [])].sort((a, b) =>
+    (b.score || 0) - (a.score || 0) ||
+    (a.title || "").localeCompare(b.title || ""));
   if (!rows.length) { table.append(el("div", "empty", "watchlist is empty")); return; }
   rows.forEach((w) => {
     const shell = el("div", "watch-item");
