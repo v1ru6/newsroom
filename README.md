@@ -44,9 +44,9 @@ were reviewed by the live LLM-backed active-attack specialist.
   findings must be grounded in the current article before they affect routing.
 - **Deterministic baseline**: regex specialists work without credentials,
   remote model calls, or hidden state.
-- **Bounded LLM path**: provider-specific code lives in
-  `src/newsroom/llm_wire.py`; classifier logic only depends on the shared LLM
-  interface.
+- **Bounded LLM path**: prompt shaping, provider adapters, and response
+  validation live in `src/newsroom/llm.py`; classifier logic only depends on
+  the shared `LLMProvider` interface.
 - **Local-first stack**: Python 3.11+, Pydantic, LangGraph, SQLite, and vanilla
   HTML/CSS/JavaScript.
 
@@ -192,7 +192,7 @@ newsroom watch --config config.yaml --llm --interval 900 --port 8765
 
 Rows marked `LLM EXPERT` were accepted from the live LLM active-attack path.
 A true on-device/local-model provider is not implemented yet; add that behind
-the `LLMProvider` interface in `src/newsroom/llm_wire.py`.
+the `LLMProvider` interface in `src/newsroom/llm.py`.
 
 ## Configuration
 
@@ -227,8 +227,7 @@ POST /api/alerts/<id>/review   X-NewsRoom: review required
 ```text
 src/newsroom/ingest/        RSS and KEV ingestion
 src/newsroom/classifiers/   deterministic and LLM-backed specialists
-src/newsroom/llm.py         prompts, schema, safety, validation
-src/newsroom/llm_wire.py    provider adapters
+src/newsroom/llm.py         prompts, providers, schema, safety, validation
 src/newsroom/safety.py      redaction and injection tripwires
 src/newsroom/workflow.py    run pipeline
 src/newsroom/store.py       SQLite persistence

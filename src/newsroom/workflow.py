@@ -169,7 +169,7 @@ def specialist_agents(state: WorkflowState) -> WorkflowState:
         provider = None
         if config.llm.enabled:
             from newsroom.classifiers.llm_active_attack import LLMActiveAttackClassifier
-            from newsroom.llm_wire import build_provider
+            from newsroom.llm import build_provider
 
             provider = build_provider(config)
             active_attack = LLMActiveAttackClassifier(provider=provider, config=config)

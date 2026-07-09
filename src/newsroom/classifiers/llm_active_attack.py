@@ -19,7 +19,7 @@ from newsroom.safety import normalize_text, redact_untrusted_text, safe_error_me
 
 if TYPE_CHECKING:
     from newsroom.config import Config
-    from newsroom.llm_wire import LLMProvider
+    from newsroom.llm import LLMProvider
 
 
 class LLMActiveAttackClassifier:

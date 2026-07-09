@@ -1,4 +1,4 @@
-"""Provider wiring tests: FakeProvider, AnthropicProvider, build_provider,
+"""LLM provider tests: FakeProvider, AnthropicProvider, build_provider,
 and run_optional_llm_triage end-to-end with an injected provider.
 """
 
@@ -7,8 +7,13 @@ import json
 import pytest
 
 from newsroom.config import Config, LLMConfig
-from newsroom.llm import run_optional_llm_triage
-from newsroom.llm_wire import AnthropicProvider, FakeProvider, OpenAIProvider, build_provider
+from newsroom.llm import (
+    AnthropicProvider,
+    FakeProvider,
+    OpenAIProvider,
+    build_provider,
+    run_optional_llm_triage,
+)
 from newsroom.models import NormalizedItem
 
 

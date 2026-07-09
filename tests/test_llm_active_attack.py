@@ -14,7 +14,7 @@ import pytest
 from newsroom.classifiers.llm_active_attack import LLMActiveAttackClassifier
 from newsroom.config import Config, LLMConfig
 from newsroom.ingest.rss import articles_to_normalized_items
-from newsroom.llm_wire import FakeProvider
+from newsroom.llm import FakeProvider
 from newsroom.models import GateDecision, NewsArticle, stable_id
 
 
