@@ -17,7 +17,7 @@ feeds -> normalize/dedupe -> KEV enrichment -> safety gates
 
 ## Solution Overview
 
-![NewsRoom live LLM dashboard](assets/newsroom-dashboard.png)
+![NewsRoom live LLM dashboard](assets/newsroom-live-llm-dashboard.png)
 
 The dashboard shows current alert posture, active alerts, watchlist items,
 CISA KEV context, source health, and recent runs. Rows marked `LLM EXPERT`
