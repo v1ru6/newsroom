@@ -45,6 +45,7 @@ const api = {
         severity: a.severity, score: a.last_score, source: a.source_id,
         url: a.url, why: a.why_it_matters,
         evidence: JSON.parse(a.evidence_json || "[]"),
+        results: parseJsonList(a.results_json),
         safety_notes: parseJsonList(a.safety_notes_json),
         first_alerted_at: a.first_alerted_at, last_seen_at: a.last_seen_at,
         max_score: a.max_score, events: a.event_count,
@@ -111,6 +112,23 @@ function score100(x) { return Math.round((x || 0) * 100); }
 
 function isPromoted(item) {
   return (item.safety_notes || []).some((note) => note.startsWith("promoted:"));
+}
+
+function activeAttackWasLlmReviewed(result) {
+  return result && result.classifier === "active_attack" &&
+    (result.reasons || []).some((reason) => reason.toLowerCase().startsWith("llm:"));
+}
+
+function llmReviewInfo(item) {
+  const results = item.results || [];
+  const sources = [];
+  if (results.some(activeAttackWasLlmReviewed)) sources.push("active-attack expert");
+  if (results.some((r) => r.classifier === "llm_triage")) sources.push("triage reviewer");
+  return {
+    reviewed: sources.length > 0,
+    label: "LLM EXPERT",
+    detail: sources.join(", "),
+  };
 }
 
 function routeCode(item, prefix) {
@@ -259,12 +277,18 @@ function alertCard(a, i) {
   const card = el("article", "card " + a.severity);
   if (a.review_status === "dismissed") card.classList.add("dismissed");
   if (i === state.selected) card.classList.add("sel");
+  const llmInfo = llmReviewInfo(a);
 
   const top = el("div", "card-top");
   const route = isPromoted(a) ? "promoted" : "alert";
   top.append(el("span", `badge route ${route}`,
     `${routeCode(a, isPromoted(a) ? "P" : "A")} · ${routeLabel(a, "alert")}`));
   top.append(el("span", "badge " + a.severity, a.severity.toUpperCase()));
+  if (llmInfo.reviewed) {
+    const badge = el("span", "badge llm", llmInfo.label);
+    badge.title = "Reviewed by " + llmInfo.detail;
+    top.append(badge);
+  }
   if (a.cve) top.append(el("span", "card-cve", a.cve));
   if (a.kevEntry) top.append(el("span", "card-product",
     `${a.kevEntry.vendor} ${a.kevEntry.product}`.trim()));
@@ -298,6 +322,7 @@ function alertCard(a, i) {
     bits.push(`score ${score100(a.score)}`);
     if (a.max_score && a.max_score !== a.score) bits.push(`max score ${score100(a.max_score)}`);
     if (a.events > 1) bits.push(`${a.events} lifecycle events`);
+    if (llmInfo.reviewed) bits.push(`LLM reviewed: ${llmInfo.detail}`);
     det.append(el("div", "card-meta", bits.join(" · ")));
     (a.safety_notes || []).forEach((note) => det.append(el("div", "evidence", note)));
     (a.evidence || []).forEach((ev) => det.append(el("div", "evidence", "· " + ev)));
@@ -413,11 +438,14 @@ function watchReason(w) {
 
 function watchDetails(w) {
   const det = el("div", "watch-details");
+  const llmInfo = llmReviewInfo(w);
   det.append(el("div", "watch-why", "Why not alert: " + watchReason(w)));
   const meta = el("div", "watch-meta");
   meta.append(el("span", null, `score ${score100(w.score)}`));
   meta.append(el("span", null, `alert threshold ${score100(w.threshold || 0.55)}`));
   meta.append(el("span", null, `gate ${w.gate_status || "pass"}`));
+  if (llmInfo.reviewed) meta.append(el("span", "llm-reviewed",
+    `LLM reviewed: ${llmInfo.detail}`));
   if (w.cve) meta.append(el("span", null, w.cve));
   det.append(meta);
   const grid = el("div", "expert-grid");
@@ -427,9 +455,13 @@ function watchDetails(w) {
     ["breach_impact", "Breach"],
     ["confidence", "Confidence"],
   ].forEach(([id, label]) => {
+    const result = expertResult(w, id);
     const cell = el("div", "expert-cell");
-    cell.append(el("b", null, label));
-    cell.append(el("span", null, expertSummary(expertResult(w, id))));
+    const title = id === "active_attack" && activeAttackWasLlmReviewed(result)
+      ? label + " (LLM)"
+      : label;
+    cell.append(el("b", null, title));
+    cell.append(el("span", null, expertSummary(result)));
     grid.append(cell);
   });
   det.append(grid);

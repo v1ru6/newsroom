@@ -37,6 +37,13 @@ output/
 # Local secret/config files. Keep template env files publishable.
 .env*
 !.env.example
+*.env
+*.env.local
+*.local
+*.local.yaml
+*.local.yml
+config.local
+config.*.local
 *.pem
 *.key
 *.p12
@@ -46,6 +53,18 @@ output/
 *credentials*
 *secrets*
 *tokens*
+*api-key*
+*apikey*
+
+# Local LLM/provider auth and replay material
+.anthropic/
+.openai/
+.claude/
+claude.json
+.claude.json
+llm_responses*.json
+provider_responses*.json
+prompt_captures*.jsonl
 
 # OS/editor metadata
 .DS_Store
@@ -56,7 +75,6 @@ Thumbs.db
 *.swo
 
 # Local agent/tooling state
-.claude/
 .codex/
 
 # Local design exports and non-source handoff files

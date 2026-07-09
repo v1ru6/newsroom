@@ -271,7 +271,10 @@ class Store:
             rows = self.conn.execute(
                 """SELECT al.*, a.url, a.source_id, a.title AS article_title,
                      (SELECT COUNT(*) FROM alert_events e WHERE e.alert_id=al.alert_id)
-                     AS event_count
+                     AS event_count,
+                     (SELECT d.results_json FROM decisions d
+                      WHERE d.article_id=al.article_id
+                      ORDER BY d.decision_id DESC LIMIT 1) AS results_json
                    FROM alerts al JOIN articles a ON a.article_id = al.article_id
                    """
                 + where

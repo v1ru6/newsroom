@@ -162,9 +162,26 @@ def specialist_agents(state: WorkflowState) -> WorkflowState:
             item.id: item_gate_decisions(item, llm_enabled=config.llm.enabled)
             for item in state["items"]
         }
-        findings, trace = run_specialist_agents(state["items"], state["articles_by_id"])
+        # One provider serves both LLM surfaces: the active-attack specialist
+        # (replaces the regex expert, regex stays as context + fallback) and
+        # the optional generic triage pass.
+        active_attack = None
+        provider = None
+        if config.llm.enabled:
+            from newsroom.classifiers.llm_active_attack import LLMActiveAttackClassifier
+            from newsroom.llm_wire import build_provider
+
+            provider = build_provider(config)
+            active_attack = LLMActiveAttackClassifier(provider=provider, config=config)
+        findings, trace = run_specialist_agents(
+            state["items"], state["articles_by_id"], config=config,
+            item_gates=item_gates, active_attack=active_attack,
+        )
+        # The LLM sees the deterministic experts' findings as trusted context,
+        # so it corroborates or contradicts them instead of starting blind.
         llm_findings, llm_gates, llm_trace = run_optional_llm_triage(
-            state["items"], item_gates, config
+            state["items"], item_gates, config,
+            deterministic_findings=findings, provider=provider,
         )
         findings.extend(llm_findings)
         trace.extend(llm_trace)
@@ -253,6 +270,7 @@ AGENT_TO_CLASSIFIER = {
     "campaign_agent": "active_attack",
     "breach_agent": "breach_impact",
     "confidence_agent": "confidence",
+    "llm_triage_agent": "llm_triage",
 }
 
 
@@ -266,17 +284,28 @@ def coordinator_decisions(state: WorkflowState) -> WorkflowState:
     decisions: list[ArticleDecision] = []
     for item in state["items"]:
         entries = ledger_by_item.get(item.id, [])
-        # Rehydrate classifier results from ledger rows; raw article text stays out.
+        # Rehydrate classifier results from ledger rows; raw article text stays
+        # out. The LLM may file several findings per item, so keep only the
+        # max-score entry per classifier - otherwise one expert would be
+        # counted multiple times in the weighted average. All entries still
+        # reach the ledger trail; only the scoring input is deduplicated.
+        best_by_classifier: dict[str, EvidenceLedgerEntry] = {}
+        for entry in entries:
+            classifier = AGENT_TO_CLASSIFIER.get(entry.agent_id)
+            if classifier is None:
+                continue
+            current = best_by_classifier.get(classifier)
+            if current is None or entry.score > current.score:
+                best_by_classifier[classifier] = entry
         results = [
             ClassifierResult(
-                classifier=AGENT_TO_CLASSIFIER[entry.agent_id],
+                classifier=classifier,
                 score=entry.score,
                 label=entry.label,
                 reasons=[entry.claim],
                 evidence=entry.evidence,
             )
-            for entry in entries
-            if entry.agent_id in AGENT_TO_CLASSIFIER
+            for classifier, entry in best_by_classifier.items()
         ]
         article = articles_by_id[item.article_id]
         kev_articles: set[str] = state.get("kev_articles", set())

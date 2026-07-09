@@ -33,7 +33,11 @@ PROMPT_INJECTION_RE = re.compile(
     r"\b("
     r"ignore (all )?(previous|prior) instructions|"
     r"disregard (all )?(previous|prior) instructions|"
-    r"you are now|act as|developer message|system message|"
+    r"forget (all )?(previous|prior) instructions|"
+    r"override (all )?(previous|prior|system|developer) instructions|"
+    r"new instructions|"
+    r"you are now|act as|developer message|system message|assistant message|"
+    r"jailbreak|DAN mode|"
     r"call this tool|use the browser|send this data|exfiltrate|"
     r"do not follow your policy"
     r")\b",
@@ -59,6 +63,8 @@ SECRET_RE = re.compile(
     r")"
 )
 
+_MAX_ERROR_CHARS = 300
+
 
 def redact_untrusted_text(value: str) -> str:
     """Remove obvious secrets and instruction-like text from display surfaces."""
@@ -66,6 +72,14 @@ def redact_untrusted_text(value: str) -> str:
     redacted = PROMPT_INJECTION_RE.sub("[REDACTED_INSTRUCTION]", redacted)
     redacted = SYSTEM_PROMPT_RE.sub("[REDACTED_PROMPT_REQUEST]", redacted)
     return redacted
+
+
+def safe_error_message(exc: BaseException | str) -> str:
+    """Return bounded, redacted diagnostics for artifacts and traces."""
+    text = redact_untrusted_text(str(exc))
+    if len(text) > _MAX_ERROR_CHARS:
+        return text[:_MAX_ERROR_CHARS] + "...[truncated]"
+    return text
 
 
 def item_gate_decisions(item: NormalizedItem, *, llm_enabled: bool) -> list[GateDecision]:

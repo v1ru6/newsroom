@@ -31,6 +31,14 @@ class LLMConfig(BaseModel):
     provider: str | None = None
     model: str | None = None
     max_items: int = Field(default=5, ge=0)
+    max_tokens: int = Field(default=1024, ge=1)
+    # The generic fifth-expert triage pass. The LLM active-attack specialist
+    # always runs when llm.enabled; set this false to run only the specialist
+    # (halves per-item API calls).
+    triage_enabled: bool = True
+    # JSON fixture for provider "fake": {"<item_id>": <payload>, "_default": ...}.
+    # Distinct from Config.fixture_path, which is the feed fixture.
+    fixture_path: Path | None = None
     timeout_seconds: float = Field(default=20.0, gt=0)
     max_prompt_chars: int = Field(default=4000, ge=500)
     max_retries: int = Field(default=0, ge=0)

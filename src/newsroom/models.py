@@ -2,8 +2,7 @@
 
 These Pydantic models are the objects that cross stage boundaries: raw news
 articles, normalized untrusted items, agent findings, gate decisions, ledger
-entries, coordinator decisions, alerts, source health, and run reports. Keeping
-them central makes the trust boundary and scoring pipeline easier to explain.
+entries, coordinator decisions, alerts, source health, and run reports.
 """
 
 from __future__ import annotations

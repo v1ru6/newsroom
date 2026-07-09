@@ -129,6 +129,11 @@ a { color: inherit; }
 .badge.high { color: var(--orange); background: color-mix(in srgb, var(--orange) 15%, transparent); }
 .badge.medium { color: var(--yellow); background: color-mix(in srgb, var(--yellow) 15%, transparent); }
 .badge.review { color: var(--on-accent); background: var(--yellow); }
+.badge.llm {
+  color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--blue) 36%, transparent);
+}
 .badge.route.alert { color: var(--on-accent); background: var(--red); border: 1px solid var(--red); }
 .badge.route.promoted { color: var(--on-accent); background: var(--blue); border: 1px solid var(--blue); }
 .card-cve { font-size: 12px; color: var(--dim); }
@@ -173,6 +178,10 @@ a { color: inherit; }
 .watch-meta span, .watch-note {
   font-size: 11px; color: var(--faint); border: 1px solid var(--line);
   border-radius: 20px; padding: 3px 8px; background: var(--chip);
+}
+.watch-meta .llm-reviewed {
+  color: var(--blue);
+  border-color: color-mix(in srgb, var(--blue) 36%, transparent);
 }
 .expert-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-width: 760px; }
 .expert-cell { border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; min-width: 0; }

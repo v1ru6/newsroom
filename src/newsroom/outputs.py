@@ -84,6 +84,7 @@ def build_data_payload(report: RunReport, decisions: list[ArticleDecision],
                        kev_articles: set[str] | None = None) -> dict:
     """The static console's data feed. Mirrored later by /api/summary."""
     kev_articles = kev_articles or set()
+    decisions_by_url = {decision.article.url: decision for decision in decisions}
     return {
         "generated_at": (report.finished_at or report.started_at).isoformat(),
         "threshold": report.config_used.get("alert_threshold"),
@@ -106,6 +107,7 @@ def build_data_payload(report: RunReport, decisions: list[ArticleDecision],
             "safety_notes": [redact_untrusted_text(value) for value in a.safety_notes],
             "first_alerted_at": a.created_at.isoformat(),
             "kev": stable_id(a.source_url) in kev_articles,
+            "results": _safe_results_for_url(decisions_by_url, a.source_url),
         } for a in report.alerts],
         "watchlist": [{
             "title": redact_untrusted_text(d.article.title),
@@ -144,6 +146,15 @@ def _safe_decision_dict(decision: ArticleDecision) -> dict:
         _safe_result_dict(result)
     data["safety_notes"] = [redact_untrusted_text(value) for value in data.get("safety_notes", [])]
     return data
+
+
+def _safe_results_for_url(decisions_by_url: dict[str, ArticleDecision],
+                          url: str) -> list[dict]:
+    decision = decisions_by_url.get(url)
+    if decision is None:
+        return []
+    return [_safe_result_dict(result.model_dump(mode="json"))
+            for result in decision.results]
 
 
 def _safe_result_dict(result: dict) -> dict:

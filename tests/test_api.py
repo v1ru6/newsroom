@@ -72,6 +72,50 @@ def test_alerts_redacted(served_store):
     assert body[0]["severity"] == "high"
 
 
+def test_alerts_include_latest_results_for_llm_portal_badge(tmp_path):
+    store = Store(tmp_path / "llm-alert.db")
+    run_id = store.begin_run(NOW)
+    url = "https://example.com/llm-reviewed"
+    art = NewsArticle(id=stable_id(url), title="Active exploitation confirmed",
+                      summary="active exploitation by a ransomware campaign",
+                      source="test", source_id="test", url=url,
+                      published_at=NOW)
+    store.upsert_article(art, run_id, "h1")
+    store.record_decision(run_id, ArticleDecision(
+        article=art,
+        results=[
+            ClassifierResult(
+                classifier="active_attack", score=0.8, label="high",
+                reasons=["llm: active exploitation confirmed"],
+                evidence=["active exploitation"],
+            ),
+            ClassifierResult(classifier="confidence", score=1.0, label="reliable"),
+        ],
+        average_score=0.7,
+        threshold=0.55,
+        decision="alert",
+    ))
+    store.record_alert(ThreatAlert(
+        alert_id="al-llm", title=art.title, severity="critical", score=0.7,
+        why_it_matters="llm: active exploitation confirmed",
+        source_url=art.url, source="test", recommended_action="review"))
+
+    server = create_server(store, port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base = f"http://127.0.0.1:{server.server_address[1]}"
+    try:
+        _, body = get(base, "/api/alerts")
+    finally:
+        server.shutdown()
+        store.close()
+
+    results = json.loads(body[0]["results_json"])
+    assert any(r["classifier"] == "active_attack"
+               and r["reasons"] == ["llm: active exploitation confirmed"]
+               for r in results)
+
+
 def test_static_and_404(served_store):
     _, base = served_store
     res, _ = get(base, "/")

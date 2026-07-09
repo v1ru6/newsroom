@@ -125,6 +125,18 @@ def cmd_watch(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_auth_login(args: argparse.Namespace) -> int:
+    from newsroom import auth
+
+    return auth.login(args.provider)
+
+
+def cmd_auth_status(args: argparse.Namespace) -> int:
+    from newsroom import auth
+
+    return auth.status(args.provider)
+
+
 def _add_run_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--config", default="config.yaml", help="YAML config path")
     parser.add_argument("--threshold", type=float, default=None, help="Override alert_threshold")
@@ -156,6 +168,17 @@ def main(argv: list[str] | None = None) -> int:
                               help="Seconds between pipeline runs")
     watch_parser.add_argument("--port", type=int, default=8765)
     watch_parser.set_defaults(func=cmd_watch)
+
+    auth_parser = subparsers.add_parser(
+        "auth", help="Authenticate LLM providers (link sign-in where available)")
+    auth_sub = auth_parser.add_subparsers(dest="action", required=True)
+    login_parser = auth_sub.add_parser("login", help="Sign in to a provider")
+    login_parser.add_argument("provider", choices=["anthropic", "openai"])
+    login_parser.set_defaults(func=cmd_auth_login)
+    status_parser = auth_sub.add_parser("status", help="Verify provider credentials")
+    status_parser.add_argument("provider", nargs="?", default=None,
+                               choices=["anthropic", "openai"])
+    status_parser.set_defaults(func=cmd_auth_status)
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")

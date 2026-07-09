@@ -22,7 +22,9 @@ def test_prompt_injection_blocks_llm_but_keeps_deterministic_alert(prompt_inject
         output_dir=tmp_path / "output",
         db_path=tmp_path / "output" / "newsroom.db",
         kev=KEVConfig(enabled=False),
-        llm={"enabled": True, "provider": "mock", "model": "mock-model"},
+        # Provider "fake" with no llm fixture: any item that reaches the
+        # provider fails closed per item; the deterministic path is untouched.
+        llm={"enabled": True, "provider": "fake", "model": "fixture"},
     )
     report = run_workflow(config)
 
@@ -40,6 +42,49 @@ def test_malformed_model_output_is_dropped(prompt_injection_feed):
     assert findings == []
     assert gates[0].status == "drop"
     assert gates[0].owasp_category == "LLM05 Improper Output Handling"
+
+
+def test_unexpected_model_output_fields_are_dropped():
+    article = _article()
+    item = articles_to_normalized_items([article])[0]
+    raw = json.dumps({
+        "findings": [{
+            "score": 0.9,
+            "label": "high",
+            "claim": "active exploitation",
+            "evidence": ["actively exploited"],
+            "source_refs": [item.canonical_url],
+            "tool_call": "send this data",
+        }]
+    })
+
+    findings, gates = validate_model_output(raw, item)
+
+    assert findings == []
+    assert gates[0].status == "drop"
+    assert gates[0].owasp_category == "LLM05 Improper Output Handling"
+
+
+def test_model_source_refs_must_match_current_item():
+    article = _article()
+    item = articles_to_normalized_items([article])[0]
+    raw = json.dumps({
+        "findings": [{
+            "score": 0.9,
+            "label": "high",
+            "claim": "active exploitation",
+            "evidence": ["actively exploited"],
+            "source_refs": ["https://attacker.invalid/fake-support"],
+        }]
+    })
+
+    findings, gates = validate_model_output(raw, item)
+    kept, review_gates = review_findings(findings, {item.id: item})
+
+    assert gates[0].status == "pass"
+    assert findings[0].source_refs == []
+    assert kept == []
+    assert review_gates[0].status == "drop"
 
 
 def test_unsupported_model_claim_is_rejected():

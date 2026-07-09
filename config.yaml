@@ -57,17 +57,42 @@ classifier_weights:
   active_attack: 1.0
   breach_impact: 1.0
   confidence: 0.5
+  # llm_triage defaults to 1.0 when omitted (unknown classifiers weigh 1.0);
+  # uncomment to tune the LLM expert's influence on routing.
+  # llm_triage: 1.0
 
 max_items_per_source: 10
 source_timeout_seconds: 10
 output_dir: output
 db_path: output/newsroom.db
 
+# Optional LLM stage. When enabled, two things happen:
+#   1. The active_attack expert becomes an LLM specialist: the regex signals
+#      feed the model as trusted context, and the regex result is the fallback
+#      whenever the call fails, output is ungrounded, the item is injection-
+#      blocked, or the max_items spend cap is hit. Scores never silently
+#      disappear - worst case is the deterministic baseline.
+#   2. A generic fifth-expert triage pass (llm_triage) reviews items; disable
+#      via triage_enabled to run only the specialist (halves API calls).
+# provider and model are deliberately blank so enabling the LLM is an explicit
+# operator choice. Authenticate with `newsroom auth login <provider>` and
+# verify with `newsroom auth status`; NewsRoom never stores credentials -
+# each vendor SDK resolves its own (Anthropic: browser link sign-in via
+# `ant auth login` or ANTHROPIC_API_KEY; OpenAI: OPENAI_API_KEY).
+#   provider: anthropic  model: claude-opus-4-8 -> live Claude API call with
+#     structured outputs. max_items is the per-run spend cap per LLM surface.
+#   provider: openai     model: gpt-5.1 -> live OpenAI call in JSON mode; the
+#     same strict validation gates apply downstream.
+#   provider: fake  model: fixture -> replays a JSON fixture (fixture_path)
+#     offline: {"<item_id>": {"findings": [...]}, "_default": {"findings": []}}
 llm:
   enabled: false
   provider:
   model:
+  triage_enabled: true
   max_items: 5
+  max_tokens: 1024
   timeout_seconds: 20
   max_prompt_chars: 4000
   max_retries: 0
+  # fixture_path: output/llm_responses.json  # provider: fake only
