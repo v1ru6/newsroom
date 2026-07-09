@@ -62,7 +62,6 @@ config.*.local
 .claude/
 claude.json
 .claude.json
-llm_responses*.json
 provider_responses*.json
 prompt_captures*.jsonl
 

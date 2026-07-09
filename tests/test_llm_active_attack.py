@@ -14,7 +14,6 @@ import pytest
 from newsroom.classifiers.llm_active_attack import LLMActiveAttackClassifier
 from newsroom.config import Config, LLMConfig
 from newsroom.ingest.rss import articles_to_normalized_items
-from newsroom.llm import FakeProvider
 from newsroom.models import GateDecision, NewsArticle, stable_id
 
 
@@ -29,7 +28,7 @@ def make_pair(summary="Researchers observed active exploitation by a ransomware 
 
 
 def llm_config(**llm_overrides) -> Config:
-    llm = dict(enabled=True, provider="fake", model="fixture")
+    llm = dict(enabled=True, provider="anthropic", model="claude-opus-4-8")
     llm.update(llm_overrides)
     return Config(llm=LLMConfig(**llm))
 
@@ -44,9 +43,20 @@ def classifier(provider, config=None):
     return LLMActiveAttackClassifier(provider=provider, config=config or llm_config())
 
 
+class StaticProvider:
+    def __init__(self, responses):
+        self.responses = responses
+
+    def generate(self, prompt, *, item_id, system_prompt=None):
+        value = self.responses[item_id] if item_id in self.responses else self.responses["_default"]
+        if isinstance(value, str):
+            return value
+        return json.dumps(value)
+
+
 def test_llm_refines_regex_result():
     item, article = make_pair()
-    clf = classifier(FakeProvider(responses={item.id: payload()}))
+    clf = classifier(StaticProvider({item.id: payload()}))
     result, details = clf.classify_item(item, article, allow_llm=True)
 
     assert details["mode"] == "llm"
@@ -62,7 +72,7 @@ def test_llm_can_downgrade_a_regex_false_positive():
     # regex fires on "ransomware" in a marketing summary; the LLM says no.
     item, article = make_pair(
         "Vendor webinar: how our product would have stopped last year's ransomware.")
-    clf = classifier(FakeProvider(responses={item.id: {"findings": []}}))
+    clf = classifier(StaticProvider({item.id: {"findings": []}}))
     result, details = clf.classify_item(item, article, allow_llm=True)
 
     assert details["mode"] == "llm"
@@ -72,7 +82,7 @@ def test_llm_can_downgrade_a_regex_false_positive():
 
 def test_provider_error_falls_back_to_regex():
     item, article = make_pair()
-    clf = classifier(FakeProvider(responses={}))  # KeyError for every item
+    clf = classifier(StaticProvider({}))  # KeyError for every item
     result, details = clf.classify_item(item, article, allow_llm=True)
 
     assert details["mode"] == "regex_fallback"
@@ -104,7 +114,7 @@ def test_provider_error_redacted_and_receives_safety_prompt():
 
 def test_malformed_model_output_falls_back_to_regex():
     item, article = make_pair()
-    clf = classifier(FakeProvider(responses={item.id: "not json {{"}))
+    clf = classifier(StaticProvider({item.id: "not json {{"}))
     result, details = clf.classify_item(item, article, allow_llm=True)
     assert details["mode"] == "regex_fallback"
     assert result.score > 0
@@ -114,7 +124,7 @@ def test_ungrounded_llm_evidence_falls_back_to_regex():
     # A hijacked/hallucinating model cannot launder a high score through
     # evidence that is not verbatim in the source text.
     item, article = make_pair()
-    clf = classifier(FakeProvider(responses={
+    clf = classifier(StaticProvider({
         item.id: payload(evidence=["fabricated quote never in the article"])}))
     result, details = clf.classify_item(item, article, allow_llm=True)
     assert details["mode"] == "regex_fallback"
@@ -129,7 +139,7 @@ def test_specialist_agents_use_llm_for_campaign_agent():
 
     item, article = make_pair()
     config = llm_config()
-    clf = classifier(FakeProvider(responses={item.id: payload()}), config)
+    clf = classifier(StaticProvider({item.id: payload()}), config)
     findings, trace = run_specialist_agents(
         [item], {article.id: article}, config=config,
         item_gates={item.id: []}, active_attack=clf)
@@ -201,12 +211,12 @@ def test_max_items_counts_failed_llm_attempts():
 # --- end to end through the workflow ---
 
 
-def test_workflow_active_attack_score_comes_from_llm(fixture_feed, tmp_path):
+def test_workflow_active_attack_score_comes_from_llm(fixture_feed, tmp_path, monkeypatch):
     from newsroom.config import KEVConfig
     from newsroom.workflow import run_workflow
 
-    responses = tmp_path / "llm_responses.json"
-    responses.write_text(json.dumps({"_default": {"findings": [{
+    monkeypatch.setattr("newsroom.llm.build_provider", lambda config: StaticProvider({
+        "_default": {"findings": [{
         "score": 0.85, "label": "high",
         "claim": "llm specialist confirms campaign activity",
         "evidence": ["active exploitation"],
@@ -214,8 +224,8 @@ def test_workflow_active_attack_score_comes_from_llm(fixture_feed, tmp_path):
     }]}}))
     cfg = Config(fixture_path=fixture_feed, output_dir=tmp_path / "o",
                  db_path=tmp_path / "o" / "n.db", kev=KEVConfig(enabled=False),
-                 llm=LLMConfig(enabled=True, provider="fake", model="fixture",
-                               fixture_path=responses, triage_enabled=False))
+                 llm=LLMConfig(enabled=True, provider="anthropic",
+                               model="claude-opus-4-8", triage_enabled=False))
     report = run_workflow(cfg)
 
     campaign_entries = [e for e in report.evidence_ledger

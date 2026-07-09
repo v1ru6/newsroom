@@ -79,8 +79,6 @@ db_path: output/newsroom.db
 #
 # Anthropic auth: `newsroom auth login anthropic` or ANTHROPIC_API_KEY.
 # OpenAI auth: export OPENAI_API_KEY, then set provider/model below.
-# Fake provider: set provider=fake, model=fixture, and fixture_path to a JSON
-# response replay file shaped like {"<item_id>": {"findings": [...]}}.
 llm:
   enabled: false
   provider: anthropic
@@ -91,4 +89,3 @@ llm:
   timeout_seconds: 30
   max_prompt_chars: 4000
   max_retries: 0
-  # fixture_path: output/llm_responses.json  # provider: fake only

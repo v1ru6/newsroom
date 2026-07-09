@@ -11,8 +11,7 @@ import base64
 import json
 import secrets
 from dataclasses import dataclass
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Protocol
+from typing import TYPE_CHECKING, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -58,36 +57,8 @@ class LLMResponsePayload(BaseModel):
 
 
 class LLMProvider(Protocol):
-    # item_id lets FakeProvider select the right fixture entry; real providers
-    # ignore it.
     def generate(self, prompt: str, *, item_id: str,
                  system_prompt: str | None = None) -> str: ...
-
-
-@dataclass
-class FakeProvider:
-    responses: dict[str, Any]
-    default: Any | None = None
-
-    def generate(self, prompt: str, *, item_id: str,
-                 system_prompt: str | None = None) -> str:
-        if item_id in self.responses:
-            value = self.responses[item_id]
-        elif self.default is not None:
-            value = self.default
-        else:
-            raise KeyError(f"no fixture response for item {item_id!r} and no default")
-        # A str fixture is returned verbatim so tests can inject malformed
-        # JSON; dict/list fixtures may be written as natural JSON.
-        if isinstance(value, str):
-            return value
-        return json.dumps(value)
-
-    @classmethod
-    def from_file(cls, path: Path) -> "FakeProvider":
-        data = json.loads(Path(path).read_text())
-        default = data.pop("_default", None)
-        return cls(responses=data, default=default)
 
 
 @dataclass
@@ -163,10 +134,6 @@ class OpenAIProvider:
 
 def build_provider(config: Config) -> LLMProvider:
     provider = config.llm.provider
-    if provider == "fake":
-        if config.llm.fixture_path is not None:
-            return FakeProvider.from_file(config.llm.fixture_path)
-        return FakeProvider(responses={})
     if provider == "anthropic":
         return AnthropicProvider(
             model=config.llm.model,
@@ -183,7 +150,7 @@ def build_provider(config: Config) -> LLMProvider:
         )
     raise ValueError(
         f"unsupported llm.provider {provider!r}; "
-        "only 'fake', 'anthropic', and 'openai' are implemented"
+        "only 'anthropic' and 'openai' are implemented"
     )
 
 

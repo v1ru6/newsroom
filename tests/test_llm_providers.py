@@ -1,5 +1,5 @@
-"""LLM provider tests: FakeProvider, AnthropicProvider, build_provider,
-and run_optional_llm_triage end-to-end with an injected provider.
+"""LLM provider tests: AnthropicProvider, OpenAIProvider, build_provider,
+and run_optional_llm_triage end-to-end with injected test providers.
 """
 
 import json
@@ -9,7 +9,6 @@ import pytest
 from newsroom.config import Config, LLMConfig
 from newsroom.llm import (
     AnthropicProvider,
-    FakeProvider,
     OpenAIProvider,
     build_provider,
     run_optional_llm_triage,
@@ -25,7 +24,7 @@ def make_item(item_id="i1", text="A critical zero-day CVE-2026-1234 is actively 
 
 
 def llm_config(**overrides) -> Config:
-    llm = dict(enabled=True, provider="fake", model="fixture")
+    llm = dict(enabled=True, provider="anthropic", model="claude-opus-4-8")
     llm.update(overrides.pop("llm", {}))
     return Config(llm=LLMConfig(**llm), **overrides)
 
@@ -43,21 +42,15 @@ VALID_PAYLOAD = {
 }
 
 
-# --- FakeProvider ---
+class StaticProvider:
+    def __init__(self, responses):
+        self.responses = responses
 
-
-def test_fake_provider_dict_fixture_returns_json():
-    provider = FakeProvider(responses={"i1": VALID_PAYLOAD})
-    raw = provider.generate("prompt", item_id="i1")
-    assert json.loads(raw) == VALID_PAYLOAD
-
-
-def test_fake_provider_from_file_loads_responses_and_default(tmp_path):
-    fixture = tmp_path / "responses.json"
-    fixture.write_text(json.dumps({"i1": VALID_PAYLOAD, "_default": {"findings": []}}))
-    provider = FakeProvider.from_file(fixture)
-    assert json.loads(provider.generate("p", item_id="i1")) == VALID_PAYLOAD
-    assert json.loads(provider.generate("p", item_id="other")) == {"findings": []}
+    def generate(self, prompt, *, item_id, system_prompt=None):
+        value = self.responses[item_id]
+        if isinstance(value, str):
+            return value
+        return json.dumps(value)
 
 
 # --- AnthropicProvider ---
@@ -156,17 +149,6 @@ def test_openai_provider_calls_completions_with_expected_arguments():
     assert json.loads(raw) == VALID_PAYLOAD
 
 
-# --- build_provider ---
-
-
-def test_build_provider_fake_with_fixture_path(tmp_path):
-    fixture = tmp_path / "responses.json"
-    fixture.write_text(json.dumps({"i1": VALID_PAYLOAD}))
-    provider = build_provider(llm_config(llm=dict(fixture_path=fixture)))
-    assert isinstance(provider, FakeProvider)
-    assert json.loads(provider.generate("p", item_id="i1")) == VALID_PAYLOAD
-
-
 def test_build_provider_anthropic(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     config = llm_config(llm=dict(provider="anthropic", model="claude-opus-4-8",
@@ -201,7 +183,7 @@ def test_build_provider_unsupported_name_raises():
 
 def test_triage_valid_fixture_produces_finding_pass_gate_and_ok_trace():
     item = make_item()
-    provider = FakeProvider(responses={"i1": VALID_PAYLOAD})
+    provider = StaticProvider({"i1": VALID_PAYLOAD})
     findings, gates, trace = run_optional_llm_triage(
         [item], {item.id: []}, llm_config(), provider=provider)
 
@@ -234,7 +216,7 @@ def test_triage_provider_receives_safety_system_prompt():
 
 def test_triage_provider_failure_drops_that_item_only():
     good, bad = make_item("good"), make_item("bad")
-    provider = FakeProvider(responses={"good": VALID_PAYLOAD})  # "bad" raises KeyError
+    provider = StaticProvider({"good": VALID_PAYLOAD})  # "bad" raises KeyError
     findings, gates, trace = run_optional_llm_triage(
         [bad, good], {bad.id: [], good.id: []}, llm_config(), provider=provider)
 
@@ -267,7 +249,7 @@ def test_triage_provider_error_is_redacted():
 
 def test_triage_malformed_json_response_drops_via_llm05_gate():
     item = make_item()
-    provider = FakeProvider(responses={"i1": "definitely not json"})
+    provider = StaticProvider({"i1": "definitely not json"})
     findings, gates, trace = run_optional_llm_triage(
         [item], {item.id: []}, llm_config(), provider=provider)
 

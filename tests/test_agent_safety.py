@@ -16,15 +16,22 @@ from newsroom.safety import review_findings
 from newsroom.workflow import coordinator_decisions, run_workflow
 
 
-def test_prompt_injection_blocks_llm_but_keeps_deterministic_alert(prompt_injection_feed, tmp_path):
+def test_prompt_injection_blocks_llm_but_keeps_deterministic_alert(
+    prompt_injection_feed, tmp_path, monkeypatch
+):
+    class FailingProvider:
+        def generate(self, prompt, *, item_id, system_prompt=None):
+            raise RuntimeError("provider unavailable")
+
+    monkeypatch.setattr("newsroom.llm.build_provider", lambda config: FailingProvider())
     config = Config(
         fixture_path=prompt_injection_feed,
         output_dir=tmp_path / "output",
         db_path=tmp_path / "output" / "newsroom.db",
         kev=KEVConfig(enabled=False),
-        # Provider "fake" with no llm fixture: any item that reaches the
-        # provider fails closed per item; the deterministic path is untouched.
-        llm={"enabled": True, "provider": "fake", "model": "fixture"},
+        # Any item that reaches the provider fails closed per item; the
+        # deterministic path is untouched.
+        llm={"enabled": True, "provider": "anthropic", "model": "claude-opus-4-8"},
     )
     report = run_workflow(config)
 
@@ -74,7 +81,7 @@ def test_model_source_refs_must_match_current_item():
             "label": "high",
             "claim": "active exploitation",
             "evidence": ["actively exploited"],
-            "source_refs": ["https://attacker.invalid/fake-support"],
+            "source_refs": ["https://attacker.invalid/untrusted-support"],
         }]
     })
 

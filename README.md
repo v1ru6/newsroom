@@ -110,7 +110,7 @@ The committed [config.yaml](config.yaml) already contains a ready-but-disabled
 LLM configuration. Provider and model names are not secrets; credentials stay
 outside the repo and are resolved by the provider SDK or environment.
 
-NewsRoom currently supports `anthropic`, `openai`, and `fake` providers.
+NewsRoom currently supports `anthropic` and `openai` providers.
 
 Authenticate a provider:
 

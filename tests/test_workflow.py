@@ -154,26 +154,31 @@ def test_multiple_llm_ledger_entries_collapse_to_max_score_for_scoring():
     assert len(decision.ledger_entry_ids) == 3
 
 
-def test_llm_corroboration_moves_watchlist_item_to_alert(fixture_feed, tmp_path):
+def test_llm_corroboration_moves_watchlist_item_to_alert(fixture_feed, tmp_path, monkeypatch):
     # Baseline (LLM disabled): the APT campaign story lands on the watchlist.
     baseline_cfg = Config(fixture_path=fixture_feed, output_dir=tmp_path / "b",
                           db_path=tmp_path / "b" / "n.db", kev=KEVConfig(enabled=False))
     baseline = run_workflow(baseline_cfg)
     assert any("APT" in d.article.title for d in baseline.watchlist)
 
-    # With a fake provider corroborating at 0.95, the blended average crosses
+    # With an injected provider corroborating at 0.95, the blended average crosses
     # the alert threshold: (1.65 + 0.95) / 4.5 = 0.578 >= 0.55.
-    responses = tmp_path / "llm_responses.json"
-    responses.write_text(json.dumps({"_default": {"findings": [{
-        "score": 0.95, "label": "high",
-        "claim": "model corroborates ongoing exploitation",
-        "evidence": ["active exploitation"],
-        "source_refs": ["https://example.com/articles/apt-energy-campaign"],
-    }]}}))
+    class CorroboratingProvider:
+        def generate(self, prompt, *, item_id, system_prompt=None):
+            return json.dumps({"findings": [{
+                "score": 0.95, "label": "high",
+                "claim": "model corroborates ongoing exploitation",
+                "evidence": ["active exploitation"],
+                "source_refs": ["https://example.com/articles/apt-energy-campaign"],
+            }]})
+
+    monkeypatch.setattr(
+        "newsroom.llm.build_provider", lambda config: CorroboratingProvider()
+    )
     cfg = Config(fixture_path=fixture_feed, output_dir=tmp_path / "o",
                  db_path=tmp_path / "o" / "n.db", kev=KEVConfig(enabled=False),
-                 llm=LLMConfig(enabled=True, provider="fake", model="fixture",
-                               fixture_path=responses))
+                 llm=LLMConfig(enabled=True, provider="anthropic",
+                               model="claude-opus-4-8"))
     report = run_workflow(cfg)
     assert any("APT" in a.title for a in report.alerts)
     data = json.loads((tmp_path / "o" / "data.json").read_text())
